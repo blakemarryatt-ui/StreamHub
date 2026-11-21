@@ -1,0 +1,114 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Now Playing</title>
+<style>
+html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif}
+.stage{position:absolute;inset:0;padding:14px;display:flex;align-items:flex-end}
+.stage.right{justify-content:flex-end}
+.card{position:relative;display:flex;align-items:center;gap:16px;width:480px;height:104px;padding:0 20px 0 12px;
+  border-radius:20px;overflow:hidden;color:#fff;
+  background:rgba(14,15,20,.72);box-shadow:0 10px 30px rgba(0,0,0,.35);
+  transform:translateX(-110%);opacity:0;transition:transform .55s cubic-bezier(.2,.9,.25,1),opacity .4s}
+.stage.right .card{transform:translateX(110%)}
+.card.show{transform:none!important;opacity:1}
+.bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(28px) saturate(1.4);
+  opacity:.55;transition:background-image .3s}
+.bg:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,.55))}
+.art{position:relative;width:80px;height:80px;border-radius:12px;flex:none;object-fit:cover;
+  box-shadow:0 6px 16px rgba(0,0,0,.45);background:#222}
+.info{position:relative;flex:1;min-width:0}
+.label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.7;display:flex;align-items:center;gap:6px}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:10px}
+.eq i{width:3px;background:#1ed760;border-radius:1px;animation:eq 1s infinite ease-in-out}
+.eq i:nth-child(2){animation-delay:-.4s}.eq i:nth-child(3){animation-delay:-.7s}
+@keyframes eq{0%,100%{height:3px}50%{height:10px}}
+.paused .eq i{animation:none;height:3px}
+.clip{overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.clip span{display:inline-block}
+.clip.scroll span{animation:marquee var(--dur,8s) ease-in-out infinite alternate}
+@keyframes marquee{0%,20%{transform:translateX(0)}80%,100%{transform:translateX(var(--dist))}}
+.title{font-size:21px;font-weight:700;margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.artist{font-size:15px;opacity:.85;margin-top:1px}
+.bar{height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin-top:9px;overflow:hidden}
+.bar div{height:100%;width:0;background:#fff;border-radius:2px;transition:width 1s linear}
+</style></head>
+<body>
+<div class="stage" id="stage">
+  <div class="card" id="card">
+    <div class="bg" id="bg"></div>
+    <img class="art" id="art" alt="">
+    <div class="info">
+      <div class="label"><span class="eq"><i></i><i></i><i></i></span><span id="app">Now playing</span></div>
+      <div class="clip title"><span id="title"></span></div>
+      <div class="clip artist"><span id="artist"></span></div>
+      <div class="bar" id="barWrap"><div id="bar"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const q = new URLSearchParams(location.search);
+const HIDE_PAUSED = q.get('hide') !== '0';
+const HIDE_AFTER = +(q.get('hideAfter') || 4) * 1000;
+if (q.get('progress') === '0') document.getElementById('barWrap').style.display = 'none';
+if (q.get('side') === 'right') document.getElementById('stage').classList.add('right');
+if (q.get('scale')) document.getElementById('card').style.zoom = q.get('scale');
+
+const $ = id => document.getElementById(id);
+const card = $('card');
+let cur = null, shownKey = null, hideTimer = null, base = 0, busy = Promise.resolve();
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const FALLBACK = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#2a2d36"/><path d="M33 52V28l22-4v24" fill="none" stroke="#888" stroke-width="3"/><circle cx="29" cy="52" r="5" fill="#888"/><circle cx="51" cy="48" r="5" fill="#888"/></svg>');
+
+function preload(src) {
+  return new Promise(res => { if (!src) return res(FALLBACK); const i = new Image(); i.onload = () => res(src); i.onerror = () => res(FALLBACK); i.src = src; });
+}
+function marquee(el) {
+  const box = el.parentElement; box.classList.remove('scroll');
+  requestAnimationFrame(() => {
+    const over = el.scrollWidth - box.clientWidth;
+    if (over > 4) { box.style.setProperty('--dist', `-${over + 24}px`); box.style.setProperty('--dur', `${Math.max(4, (over + 24) / 25)}s`); box.classList.add('scroll'); }
+  });
+}
+async function fill(m) {
+  const src = await preload(m.art);
+  $('art').src = src; $('bg').style.backgroundImage = `url("${src}")`;
+  $('title').textContent = m.title; $('artist').textContent = m.artist || '';
+  $('app').textContent = m.app && m.app !== 'Spotify' ? m.app : 'Now playing';
+  marquee($('title')); marquee($('artist'));
+}
+const show = () => card.classList.add('show');
+const hide = () => card.classList.remove('show');
+const visible = () => card.classList.contains('show');
+
+function update(m) {
+  cur = m; base = Date.now();
+  busy = busy.then(async () => {
+    const active = m && m.active && m.title;
+    const key = active ? `${m.title}|${m.artist}` : null;
+    card.classList.toggle('paused', !(m && m.playing));
+    clearTimeout(hideTimer);
+    if (!active) { hide(); shownKey = null; return; }
+    if (key !== shownKey) {
+      if (visible()) { hide(); await wait(450); }
+      shownKey = key; await fill(m);
+      if (m.playing || !HIDE_PAUSED) { await wait(30); show(); }
+    } else if (m.art && $('art').src.indexOf(m.art) === -1) {
+      const src = await preload(m.art); $('art').src = src; $('bg').style.backgroundImage = `url("${src}")`;
+    }
+    if (m.playing || !HIDE_PAUSED) { if (!visible()) show(); }
+    else hideTimer = setTimeout(hide, HIDE_AFTER);
+  });
+}
+setInterval(() => {
+  if (!cur || !cur.active || !cur.duration) return;
+  const pos = Math.min(cur.duration, cur.position + (cur.playing ? (Date.now() - base) / 1000 : 0));
+  $('bar').style.width = (pos / cur.duration * 100) + '%';
+}, 500);
+
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/ws?kind=overlay&key=${encodeURIComponent(q.get('key') || '')}`);
+  ws.onmessage = e => { const m = JSON.parse(e.data); if (m.t === 'media') update(m.d); };
+  ws.onclose = () => setTimeout(connect, 2000);
+}
+connect();
+</script>
+</body></html>

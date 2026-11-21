@@ -1,0 +1,30 @@
+{
+  "port": 8337,
+  "key": "",
+  "discord": {
+    "enabled": true,
+    "client_id": "",
+    "client_secret": "",
+    "redirect_uri": "http://localhost"
+  },
+  "obs": {
+    "enabled": true,
+    "host": "localhost",
+    "port": 4455,
+    "password": "",
+    "discord_source": "Discord",
+    "add_stream_limiter": true
+  },
+  "media": {
+    "enabled": true,
+    "prefer_app": "spotify",
+    "only_preferred_app": false
+  },
+  "automute": {
+    "enabled": true,
+    "threshold_db": -12.0,
+    "hold_ms": 250,
+    "duration_s": 30,
+    "whitelist": []
+  }
+}

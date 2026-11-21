@@ -1,0 +1,67 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Voice</title>
+<style>
+html,body{margin:0;background:transparent;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif}
+#list{display:flex;flex-direction:column;gap:8px;padding:10px}
+#list.row{flex-direction:row;flex-wrap:wrap;gap:14px}
+.u{display:flex;align-items:center;gap:10px;transition:opacity .25s,transform .25s;animation:in .35s cubic-bezier(.2,.9,.25,1)}
+@keyframes in{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+.row .u{flex-direction:column;gap:6px}
+.av{position:relative;width:48px;height:48px;flex:none}
+.av img{width:100%;height:100%;border-radius:50%;display:block;background:#333;
+  box-shadow:0 0 0 3px rgba(0,0,0,.35);transition:box-shadow .12s,transform .12s}
+.u.sp .av img{box-shadow:0 0 0 3px #23d160,0 0 18px rgba(35,209,96,.6);transform:scale(1.06)}
+.u.quiet{opacity:.55}
+.badge{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;background:#e8384f;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+.badge svg{width:12px;height:12px}
+.name{color:#fff;font-size:15px;font-weight:600;padding:4px 10px;border-radius:8px;background:rgba(10,11,15,.7);
+  max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .name{font-size:12px;max-width:90px}
+.u.sp .name{background:rgba(10,11,15,.85)}
+.only-sp .u:not(.sp){display:none}
+</style></head>
+<body><div id="list"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const list = document.getElementById('list');
+if (q.get('layout') === 'row') list.classList.add('row');
+if (q.get('only') === 'speaking') list.classList.add('only-sp');
+const SHOW_SELF = q.get('self') !== '0';
+const DIM = q.get('dim') !== '0';
+const MIC_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M3 3l18 18M12 18v3M9 9v2a3 3 0 0 0 5 2M15 10V6a3 3 0 0 0-6-1"/></svg>';
+const DEAF = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M3 3l18 18M4 15v-3a8 8 0 0 1 2-5.5M9 4.5A8 8 0 0 1 20 12v3"/></svg>';
+const els = new Map();
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function render(d) {
+  const members = (d.connected && d.channel ? d.members : []).filter(m => SHOW_SELF || !d.me || m.id !== d.me.id);
+  const sp = new Set(d.speaking || []);
+  const ids = new Set(members.map(m => m.id));
+  for (const [id, el] of els) if (!ids.has(id)) { el.remove(); els.delete(id); }
+  members.forEach((m, i) => {
+    let el = els.get(m.id);
+    if (!el) {
+      el = document.createElement('div'); el.className = 'u';
+      el.innerHTML = '<div class="av"><img alt=""><div class="badge" style="display:none"></div></div><div class="name"></div>';
+      els.set(m.id, el);
+    }
+    if (list.children[i] !== el) list.insertBefore(el, list.children[i] || null);
+    const img = el.querySelector('img'); if (img.getAttribute('src') !== m.avatar) img.src = m.avatar;
+    el.querySelector('.name').textContent = m.name;
+    const deaf = m.self_deaf || m.server_deaf, muted = m.self_mute || m.server_mute || m.local_mute;
+    const b = el.querySelector('.badge');
+    b.style.display = deaf || muted ? 'flex' : 'none';
+    b.innerHTML = deaf ? DEAF : MIC_OFF;
+    el.classList.toggle('sp', sp.has(m.id) && !m.local_mute);
+    el.classList.toggle('quiet', DIM && !sp.has(m.id));
+  });
+}
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/ws?kind=overlay&key=${encodeURIComponent(q.get('key') || '')}`);
+  ws.onmessage = e => { const m = JSON.parse(e.data); if (m.t === 'discord') render(m.d); };
+  ws.onclose = () => setTimeout(connect, 2000);
+}
+connect();
+</script>
+</body></html>

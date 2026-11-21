@@ -1,0 +1,8 @@
+# personal stuff - never upload
+config.json
+config.tmp
+data/
+.venv/
+*.log
+__pycache__/
+*.part

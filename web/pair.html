@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>StreamHub · Pair your phone</title>
+<link rel="icon" href="/app/icon-192.png">
+<style>
+body{margin:0;background:#0d0e12;color:#eef0f4;font:15px/1.5 system-ui,"Segoe UI",sans-serif}
+.wrap{max-width:920px;margin:40px auto;padding:0 24px;display:grid;grid-template-columns:340px 1fr;gap:40px}
+h1{margin:0 0 6px;font-size:30px} h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:#8a90a0;margin:28px 0 10px}
+.qr{background:#fff;border-radius:20px;padding:18px} .qr svg{width:100%;height:auto;display:block}
+.muted{color:#8a90a0} code{background:#1d2028;padding:3px 8px;border-radius:6px;font-size:13px;word-break:break-all}
+.card{background:#16181e;border:1px solid #262a33;border-radius:16px;padding:16px 18px;margin:10px 0}
+.card b{display:block;margin-bottom:4px}
+button{background:#7c6cff;color:#fff;border:0;border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer;margin-left:6px}
+ol{padding-left:20px} li{margin:6px 0}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+</style></head>
+<body><div class="wrap">
+<div>
+  <div class="qr">{{QR}}</div>
+  <p class="muted" style="text-align:center">Scan with your phone's camera</p>
+</div>
+<div>
+  <h1>Pair your phone</h1>
+  <p class="muted">Your phone has to be on the same Wi-Fi as this PC.</p>
+  <ol>
+    <li>Scan the QR code. It opens the StreamHub app in your phone's browser.</li>
+    <li><b>iPhone:</b> tap Share → <i>Add to Home Screen</i>.<br><b>Android:</b> tap ⋮ → <i>Add to Home screen</i>.</li>
+    <li>From now on, open StreamHub from your home screen like any other app.</li>
+  </ol>
+  <p class="muted small">Or type this on your phone: <code>{{URL}}</code></p>
+  <p class="muted small">If the phone can't connect, Windows Firewall may be blocking it. Allow Python on <b>Private networks</b> when Windows asks.</p>
+
+  <h2>OBS overlays (add as Browser Sources)</h2>
+  <div class="card"><b>Now Playing</b>
+    <code id="u1">{{BASE}}/overlay/nowplaying</code><button onclick="cp('u1')">Copy</button>
+    <div class="muted small">Size 520 × 140. Slides in on each new song and hides when music is paused.<br>
+    Options: <code>?progress=0</code> to hide the bar · <code>?hide=0</code> to always show · <code>?side=right</code></div></div>
+  <div class="card"><b>Who's talking</b>
+    <code id="u2">{{BASE}}/overlay/voice</code><button onclick="cp('u2')">Copy</button>
+    <div class="muted small">Size 320 × 600. Options: <code>?only=speaking</code> · <code>?self=0</code> to hide yourself · <code>?layout=row</code></div></div>
+  <p class="muted small">Open the phone app on this PC: <a style="color:#a99fff" href="/">{{BASE}}</a></p>
+</div>
+</div>
+<script>function cp(id){navigator.clipboard.writeText(document.getElementById(id).textContent)}</script>
+</body></html>

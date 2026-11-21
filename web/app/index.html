@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0d0e12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StreamHub">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/app/icon-192.png">
+<link rel="apple-touch-icon" href="/app/icon-192.png">
+<link rel="stylesheet" href="/app/app.css?v=4">
+<title>StreamHub</title>
+</head>
+<body>
+<div id="banner" class="banner hidden"></div>
+
+<main>
+  <!-- LIVE -->
+  <section id="tab-live" class="tab active">
+    <header class="top"><h1>StreamHub</h1><span id="dots" class="dots"></span></header>
+    <div id="updCard" class="card upd hidden"></div>
+
+    <div class="grid2">
+      <button id="btnMute" class="big" data-cmd="discord.toggleMute">
+        <span class="ic" data-icon="mic"></span><b>Mic</b><small>Discord</small>
+      </button>
+      <button id="btnDeaf" class="big" data-cmd="discord.toggleDeaf">
+        <span class="ic" data-icon="headphones"></span><b>Deafen</b><small>Discord</small>
+      </button>
+    </div>
+
+    <div class="card" id="voiceMini"></div>
+
+    <div class="grid2">
+      <button id="btnStream" class="pill" data-cmd="obs.toggleStream"><span class="dot"></span><b>Go live</b></button>
+      <button id="btnRecord" class="pill" data-cmd="obs.toggleRecord"><span class="dot"></span><b>Record</b></button>
+    </div>
+
+    <div class="card np-mini" id="npMini"></div>
+
+    <div class="card">
+      <h3>Scenes</h3>
+      <div id="sceneChips" class="chips"></div>
+    </div>
+    <div id="verLine" class="ver muted small"></div>
+  </section>
+
+  <!-- VOICE -->
+  <section id="tab-voice" class="tab">
+    <header class="top"><h1 id="vcTitle">Voice</h1><small id="vcGuild" class="muted"></small></header>
+    <div id="members" class="members"></div>
+
+    <div class="card" id="amCard">
+      <div class="row between">
+        <h3>Ear-rape protection</h3>
+        <label class="switch"><input type="checkbox" id="amEnabled"><span></span></label>
+      </div>
+      <p class="muted small">When Discord audio gets this loud, whoever was talking gets muted (only for you).</p>
+      <div class="meter"><div id="meterFill" class="fill"></div><div id="meterThr" class="thr"></div></div>
+      <div class="row between small muted"><span id="meterDb">-- dB</span><span id="meterHint"></span></div>
+
+      <label class="field"><span>Trigger level <b id="thrVal"></b></span>
+        <input type="range" id="amThr" min="-40" max="0" step="0.5"></label>
+      <label class="field"><span>Must stay loud for <b id="holdVal"></b></span>
+        <input type="range" id="amHold" min="50" max="1500" step="50"></label>
+      <label class="field"><span>Mute them for <b id="durVal"></b></span>
+        <input type="range" id="amDur" min="0" max="300" step="5"></label>
+
+      <div id="amMuted"></div>
+      <div id="amHistory" class="small muted"></div>
+    </div>
+  </section>
+
+  <!-- OBS -->
+  <section id="tab-obs" class="tab">
+    <header class="top"><h1>OBS</h1><small id="obsStatus" class="muted"></small></header>
+    <div class="grid2">
+      <button class="pill" data-cmd="obs.toggleStream" id="btnStream2"><span class="dot"></span><b>Go live</b></button>
+      <button class="pill" data-cmd="obs.toggleRecord" id="btnRecord2"><span class="dot"></span><b>Record</b></button>
+    </div>
+    <h3 class="sect">Scenes</h3>
+    <div id="sceneGrid" class="scene-grid"></div>
+    <h3 class="sect">Audio</h3>
+    <div id="audioList" class="list"></div>
+  </section>
+
+  <!-- MUSIC -->
+  <section id="tab-music" class="tab">
+    <div class="player" id="player">
+      <div class="art-wrap"><img id="plArt" alt=""><div id="plNoArt" class="noart" data-icon="music"></div></div>
+      <div class="pl-text"><div id="plTitle" class="pl-title">Nothing playing</div><div id="plArtist" class="muted"></div></div>
+      <div class="progress"><div id="plBar"></div></div>
+      <div class="row between small muted"><span id="plPos">0:00</span><span id="plApp"></span><span id="plDur">0:00</span></div>
+      <div class="controls">
+        <button class="round" data-cmd="media.prev"><span data-icon="prev"></span></button>
+        <button class="round main" data-cmd="media.playpause" id="plPlay"><span data-icon="play"></span></button>
+        <button class="round" data-cmd="media.next"><span data-icon="next"></span></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-tab="live" class="active"><span data-icon="bolt"></span>Live</button>
+  <button data-tab="voice"><span data-icon="users"></span>Voice</button>
+  <button data-tab="obs"><span data-icon="video"></span>OBS</button>
+  <button data-tab="music"><span data-icon="music"></span>Music</button>
+</nav>
+
+<div id="toasts"></div>
+<script src="/app/app.js?v=4"></script>
+</body>
+</html>
