@@ -9,6 +9,7 @@ import os
 import secrets
 import shutil
 import socket
+import time
 import sys
 import webbrowser
 from pathlib import Path
@@ -145,6 +146,14 @@ class StreamHub:
         self.updater = Updater(self.hub)
         self.restart = False
         self._stop = None
+        self.update_note = None   # "Updated to x" shown to phones for a bit after an update
+        marker = DATA / "just_updated"
+        if marker.exists():
+            try:
+                self.update_note = (f"Updated to {self.updater.current} ✓", time.time() + 90)
+                marker.unlink()
+            except OSError:
+                pass
         # seed state so the first client gets something
         self.hub.publish("discord", self.discord.snapshot())
         self.hub.publish("obs", self.obs.snapshot())
@@ -216,6 +225,8 @@ class StreamHub:
             await ws.send_str(json.dumps({"t": "auth", "d": {"ok": True}}))
             for topic, data in self.hub.state.items():
                 await ws.send_str(json.dumps({"t": topic, "d": data}))
+            if kind == "app" and self.update_note and time.time() < self.update_note[1]:
+                await ws.send_str(json.dumps({"t": "toast", "d": {"msg": self.update_note[0], "level": "info"}}))
             async for msg in ws:
                 if msg.type != WSMsgType.TEXT or kind != "app":
                     continue
@@ -263,6 +274,10 @@ class StreamHub:
             if await self.updater.apply():
                 self.hub.toast(f"Updated to {self.updater.current}. Restarting…")
                 await asyncio.sleep(1.0)
+                try:
+                    (DATA / "just_updated").write_text(self.updater.current, encoding="utf-8")
+                except OSError:
+                    pass
                 self.restart = True
                 self._stop.set()
             else:
